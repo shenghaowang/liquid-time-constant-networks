@@ -1,0 +1,8 @@
+hydra-core
+loguru
+numpy
+omegaconf
+pandas
+pytorch-lightning
+pre-commit
+pytest
