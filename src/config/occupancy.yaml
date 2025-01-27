@@ -1,6 +1,5 @@
 data:
-  train:
-    - data/occupancy/datatraining.txt
+  train: data/occupancy/datatraining.txt
   test:
     - data/occupancy/datatest.txt
     - data/occupancy/datatest2.txt
