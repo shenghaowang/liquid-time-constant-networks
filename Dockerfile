@@ -14,14 +14,14 @@ RUN pip install --no-cache-dir -r requirements-no-pin.txt
 ##################################################### DEPENDENCIES SETUP ##########################################################
 FROM base AS final
 
-# Update apt get
-RUN apt-get update --fix-missing
-
 # Install linux packages required by repo
 RUN apt -y install make git
 
 # Remove apt binaries
 RUN rm -rf /var/lib/apt/lists/*
+
+# Install core dependencies.
+RUN apt-get update && apt-get install -y libpq-dev build-essential
 
 # Install python packages
 COPY requirements.txt .
