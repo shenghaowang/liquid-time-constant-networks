@@ -3,10 +3,13 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
+import torch
 from loguru import logger
 from torch.utils.data import DataLoader, Dataset
 
 from data.utils import cut_in_sequences
+
+SEED = 893429
 
 
 def load_data(
@@ -29,7 +32,7 @@ def load_data(
         _description_
     """
     df = pd.read_csv(data_dir)
-    logger.debug(f"Loaded data from {data_dir}: {df.shape}")
+    # logger.debug(f"Loaded data from {data_dir}: {df.shape}")
 
     X = np.stack([df[col].values for col in feature_cols], axis=-1)
     y = df[target_col].values.astype(np.int32)
@@ -56,25 +59,25 @@ def split_data(
     Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         _description_
     """
-    valid_size = int(val_ratio * X_train.shape[1])
+    valid_size = int(val_ratio * X_train.shape[0])
     logger.debug(
-        f"Training size: {X_train.shape[1] - valid_size}, Validation size: {valid_size}"
+        f"Training size: {X_train.shape[0] - valid_size}, Validation size: {valid_size}"
     )
 
-    permutation = np.random.RandomState(893429).permutation(X_train.shape[1])
+    permutation = np.random.RandomState(SEED).permutation(X_train.shape[0])
     X_valid, y_valid = (
-        X_train[:, permutation[:valid_size]],
-        y_train[:, permutation[:valid_size]],
+        X_train[permutation[:valid_size], :],
+        y_train[permutation[:valid_size], :],
     )
     X_train, y_train = (
-        X_train[:, permutation[valid_size:]],
-        y_train[:, permutation[valid_size:]],
+        X_train[permutation[valid_size:], :],
+        y_train[permutation[valid_size:], :],
     )
 
     return X_train, y_train, X_valid, y_valid
 
 
-class Dataset(Dataset):
+class OccupancyDataset(Dataset):
     def __init__(self, X: np.ndarray, y: np.ndarray):
         self.X = X
         self.y = y
@@ -83,7 +86,9 @@ class Dataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx: int) -> np.ndarray:
-        return self.X[idx], self.y[idx]
+        X = torch.tensor(self.X[idx], dtype=torch.float32)
+        y = torch.tensor(self.y[idx], dtype=torch.float32)
+        return X, y
 
 
 class DataModule(pl.LightningDataModule):
@@ -93,6 +98,7 @@ class DataModule(pl.LightningDataModule):
         test_files: List[str],
         feature_cols: List[str],
         target_col: str,
+        seq_len: int,
         batch_size: int = 16,
     ):
         super().__init__()
@@ -100,6 +106,7 @@ class DataModule(pl.LightningDataModule):
         self.test_files = test_files
         self.feature_cols = feature_cols
         self.target_col = target_col
+        self.seq_len = seq_len
         self.batch_size = batch_size
 
     def setup(self, stage=None):
@@ -113,7 +120,7 @@ class DataModule(pl.LightningDataModule):
         X_mean = np.mean(X_train, axis=0)
         X_std = np.std(X_train, axis=0)
         X_train = (X_train - X_mean) / X_std
-        X_train, y_train = cut_in_sequences(X_train, y_train, 16)
+        X_train, y_train = cut_in_sequences(X_train, y_train, self.seq_len)
 
         # Split data for training and validation
         X_train, y_train, X_valid, y_valid = split_data(X_train, y_train)
@@ -128,22 +135,23 @@ class DataModule(pl.LightningDataModule):
             )
             X_test = (X_test - X_mean) / X_std
 
-            X_test, y_test = cut_in_sequences(X_test, y_test, 16, 8)
+            X_test, y_test = cut_in_sequences(X_test, y_test, self.seq_len, 8)
             X_tests.append(X_test)
             y_tests.append(y_test)
 
-        X_test, y_test = np.concatenate(X_tests, axis=1), np.concatenate(
-            y_tests, axis=1
+        X_test, y_test = np.concatenate(X_tests, axis=0), np.concatenate(
+            y_tests, axis=0
         )
-        self.train = Dataset(X_train, y_train)
-        self.valid = Dataset(X_valid, y_valid)
-        self.test = Dataset(X_test, y_test)
+
+        self.train = OccupancyDataset(X_train, y_train)
+        self.valid = OccupancyDataset(X_valid, y_valid)
+        self.test = OccupancyDataset(X_test, y_test)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
 
     def valid_dataloader(self):
-        return DataLoader(self.valid, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.valid, batch_size=self.batch_size)
 
     def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.test, batch_size=self.batch_size)
