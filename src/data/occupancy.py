@@ -15,21 +15,21 @@ SEED = 893429
 def load_data(
     data_dir: str, feature_cols: List[str], target_col: str
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """_summary_
+    """Load raw data into numpy arrays
 
     Parameters
     ----------
     data_dir : str
-        _description_
+        directory of the data
     feature_cols : List[str]
-        _description_
+        feature columns
     target_col : str
-        _description_
+        column of the target variable
 
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        _description_
+        features and target variables in numpy arrays
     """
     df = pd.read_csv(data_dir)
     # logger.debug(f"Loaded data from {data_dir}: {df.shape}")
@@ -43,21 +43,21 @@ def load_data(
 def split_data(
     X_train: np.ndarray, y_train: np.ndarray, val_ratio: float = 0.1
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """_summary_
+    """Split training data into training and validation sets
 
     Parameters
     ----------
     X_train : np.ndarray
-        _description_
+        Training features
     y_train : np.ndarray
-        _description_
+        Training target variable
     val_ratio : float, optional
-        _description_, by default 0.1
+        Proportion of the validation set, by default 0.1
 
     Returns
     -------
     Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-        _description_
+        Training and validation features and target variables
     """
     valid_size = int(val_ratio * X_train.shape[0])
     logger.debug(

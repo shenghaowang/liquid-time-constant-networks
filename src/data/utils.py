@@ -6,23 +6,30 @@ import numpy as np
 def cut_in_sequences(
     X: np.ndarray, y: np.ndarray, seq_len: int, inc=1
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """_summary_
+    """
+    Splits the input data into sequences of a specified length.
+
+    This function takes the input features and target variable arrays and splits them into
+    overlapping sequences of length `seq_len`. The increment `inc` determines the step size
+    between the start of each sequence.
 
     Parameters
     ----------
     X : np.ndarray
-        _description_
+        The input features array of shape (num_samples, num_features).
     y : np.ndarray
-        _description_
+        The target variable array of shape (num_samples,).
     seq_len : int
-        _description_
+        The length of each sequence.
     inc : int, optional
-        _description_, by default 1
+        The step size between the start of each sequence, by default 1.
 
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        _description_
+        A tuple containing two arrays:
+        - X_seq: The array of input sequences of shape (num_sequences, seq_len, num_features).
+        - y_seq: The array of target values corresponding to the end of each sequence, of shape (num_sequences,)
     """
     X_seq = []
     y_seq = []
