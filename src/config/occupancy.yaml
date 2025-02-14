@@ -11,3 +11,4 @@ data:
     - CO2
     - HumidityRatio
   target: Occupancy
+  seq_len: 16
