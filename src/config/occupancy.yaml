@@ -1,0 +1,14 @@
+# https://archive.ics.uci.edu/dataset/864/room+occupancy+estimation
+data:
+  train: data/occupancy/datatraining.txt
+  test:
+    - data/occupancy/datatest.txt
+    - data/occupancy/datatest2.txt
+  features:
+    - Temperature
+    - Humidity
+    - Light
+    - CO2
+    - HumidityRatio
+  target: Occupancy
+  seq_len: 16
