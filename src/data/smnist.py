@@ -30,22 +30,23 @@ class DataModule(pl.LightningDataModule):
         self.train_size = train_size
         self.batch_size = batch_size
 
+    def prepare_data(self):
+        torchvision.datasets.MNIST(root="./data", train=True, download=True)
+        torchvision.datasets.MNIST(root="./data", train=False, download=True)
+
     def _reshape_images(self, X: np.ndarray) -> np.ndarray:
-        X = X.reshape([-1, 28, 28])
-        return np.transpose(X, (1, 0, 2))
+        return X.reshape([-1, 28, 28])
 
     def setup(self, stage=None):
         # Load MNIST dataset
         mnist_train = torchvision.datasets.MNIST(
             root="./data",
             train=True,
-            download=True,
             transform=torchvision.transforms.ToTensor(),
         )
         mnist_test = torchvision.datasets.MNIST(
             root="./data",
             train=False,
-            download=True,
             transform=torchvision.transforms.ToTensor(),
         )
 
@@ -61,6 +62,10 @@ class DataModule(pl.LightningDataModule):
         X_train = self._reshape_images(X_train)
         X_valid = self._reshape_images(X_valid)
         X_test = self._reshape_images(X_test)
+
+        logger.debug(f"Reshaped images: {X_train.shape}")
+        logger.debug(f"Reshaped images: {X_valid.shape}")
+        logger.debug(f"Reshaped images: {X_test.shape}")
 
         logger.debug(f"Total number of training sequences: {X_train.shape[1]}")
         logger.debug(f"Total number of validation sequences: {X_valid.shape[1]}")
