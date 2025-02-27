@@ -1,0 +1,2 @@
+batch_size: 16
+train_size: 0.9
