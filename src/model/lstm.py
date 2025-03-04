@@ -10,6 +10,7 @@ class LSTM(pl.LightningModule):
         hidden_dim: int,
         output_dim: int,
         num_layers: int = 1,
+        is_binary: bool = True,
         learning_rate: float = 0.001,
     ):
         super(LSTM, self).__init__()
@@ -27,7 +28,7 @@ class LSTM(pl.LightningModule):
         self.fc = nn.Linear(in_features=hidden_dim, out_features=output_dim)
 
         # Loss function (Binary Cross Entropy for classification)
-        self.loss_fn = nn.BCEWithLogitsLoss()
+        self.loss_fn = nn.BCEWithLogitsLoss() if is_binary else nn.CrossEntropyLoss()
 
     def forward(self, x):
         out, _ = self.lstm(x)
@@ -36,27 +37,69 @@ class LSTM(pl.LightningModule):
     def training_step(self, batch):
         x, y = batch
         logits = self.forward(x)
-        loss = self.loss_fn(logits, y.float())
-        acc = ((torch.sigmoid(logits) > 0.5) == y).float().mean()
+
+        if self.hparams.is_binary:
+            y = y.float()  # Ensure y is (batch, 1)
+            loss = self.loss_fn(logits, y)
+            preds = torch.sigmoid(logits) > 0.5  # Convert logits to binary predictions
+
+        else:  # Multi-Class Classification
+            y = y.long()  # Ensure y is (batch,)
+            loss = self.loss_fn(logits, y)
+            preds = torch.argmax(logits, dim=1)
+
+        # Compute accuracy
+        acc = (preds == y).float().mean()
+
+        # Logging
         self.log("train_loss", loss, prog_bar=True)
         self.log("train_acc", acc, prog_bar=True)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self.forward(x)
-        loss = self.loss_fn(logits, y.float())
-        acc = ((torch.sigmoid(logits) > 0.5) == y).float().mean()
+
+        if self.hparams.is_binary:
+            y = y.float()  # Ensure y is (batch, 1)
+            loss = self.loss_fn(logits, y)
+            preds = torch.sigmoid(logits) > 0.5  # Convert logits to binary predictions
+
+        else:  # Multi-Class Classification
+            y = y.long()  # Ensure y is (batch,)
+            loss = self.loss_fn(logits, y)
+            preds = torch.argmax(logits, dim=1)
+
+        # Compute accuracy
+        acc = (preds == y).float().mean()
+
+        # Logging
         self.log("val_loss", loss, prog_bar=True)
         self.log("val_acc", acc, prog_bar=True)
+
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         logits = self.forward(x)
-        loss = self.loss_fn(logits, y)
-        acc = ((torch.sigmoid(logits) > 0.5) == y).float().mean()
+
+        if self.hparams.is_binary:
+            y = y.float()  # Ensure y is (batch, 1)
+            loss = self.loss_fn(logits, y)
+            preds = torch.sigmoid(logits) > 0.5  # Convert logits to binary predictions
+
+        else:  # Multi-Class Classification
+            y = y.long()  # Ensure y is (batch,)
+            loss = self.loss_fn(logits, y)
+            preds = torch.argmax(logits, dim=1)
+
+        # Compute accuracy
+        acc = (preds == y).float().mean()
+
+        # Logging
         self.log("test_acc", acc, prog_bar=True)
+
         return loss
 
     def configure_optimizers(self):

@@ -6,3 +6,4 @@ pandas
 pytorch-lightning
 pre-commit
 pytest
+torchvision
